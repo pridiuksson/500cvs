@@ -59,11 +59,6 @@ graph TD
     LLM -- | 7. Returns Final Answer | --> F_FN;
     F_FN -- | 8. Sends Answer to UI | --> User;
 
-    style F_UI fill:#f9a825
-    style F_FN fill:#f9a825
-    style F_DB fill:#f9a825
-    style F_ST fill:#f9a825
-    style LLM fill:#4285F4,color:#000
 ```
 
 ---
