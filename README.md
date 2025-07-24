@@ -104,6 +104,15 @@ sequenceDiagram
 
 This project is designed to be built by an **agentic AI coder**, specifically the **Google Gemini CLI**. Your role is to guide the agent by providing it with the technical backlog (`project_backlog.md`).
 
+## How the AI Agent Works
+
+The AI agent (e.g., Claude Code, Gemini CLI, Stitch, Qwen Coder, etc) reads the `project_backlog.md` file and generates executable shell scripts and code snippets. It automates tasks such as:
+- Setting up Firebase infrastructure.
+- Writing backend logic for data ingestion and querying.
+- Deploying the application to Firebase.
+
+You provide the AI agent with specific prompts (see "Getting Started"), and it executes the corresponding steps in the `project_backlog.md`.
+
 ### **Step 1: Prerequisites**
 Ensure the following tools are installed and configured on your workstation:
 - **Google Cloud SDK (`gcloud`)**: [Install Guide](https://cloud.google.com/sdk/docs/install)
