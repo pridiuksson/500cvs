@@ -4,7 +4,17 @@ const loadingDiv = document.getElementById('loading');
 const resultContainer = document.getElementById('result-container');
 const resultText = document.getElementById('result-text');
 
-firebase.initializeApp();
+// TODO: Replace with your own Firebase project's configuration
+const firebaseConfig = {
+  apiKey: "your-api-key",
+  authDomain: "your-project-id.firebaseapp.com",
+  projectId: "your-project-id",
+  storageBucket: "your-project-id.appspot.com",
+  messagingSenderId: "your-sender-id",
+  appId: "your-app-id"
+};
+
+firebase.initializeApp(firebaseConfig);
 const functions = firebase.functions();
 
 queryBtn.addEventListener('click', async () => {
