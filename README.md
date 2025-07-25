@@ -4,6 +4,38 @@ A serverless web application that allows HR teams to intelligently search throug
 
 ---
 
+## **Quick Start**
+
+For the impatient, here's how to get the project up and running in a few commands.
+
+**1. Clone the repository:**
+```bash
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
+```
+
+**2. Install dependencies:**
+```bash
+npm install
+```
+
+**3. Run the application locally:**
+```bash
+firebase emulators:start
+```
+This will start the Firebase Local Emulator Suite, which includes a local version of the frontend and backend. You can access the application at the URL provided in the terminal.
+
+**4. Deploy to the cloud:**
+```bash
+# Set your Google Cloud Project ID
+export PROJECT_ID="your-chosen-unique-project-id-123"
+
+# Run the deployment script
+./02-deploy-and-upload.sh
+```
+
+---
+
 ## **1. The Problem**
 
 An HR department has hundreds of PDF CVs for a recruitment drive. Manually sifting through them to find candidates matching specific, nuanced criteria (e.g., "has worked at a startup," "has leadership experience in a corporate setting") is slow, inefficient, and prone to human error.
@@ -65,13 +97,25 @@ graph TD
 
 ## **4. How It Works**
 
-The system operates in two main phases:
+The system operates in two main phases: data ingestion and querying.
 
-### **Phase 1: One-Time Data Ingestion (Automated)**
-When the PDF files are uploaded, a backend process automatically triggers. It reads each CV, breaks it into meaningful chunks, converts those chunks into numerical vector embeddings, and stores everything in the Firestore database. This makes the content of the CVs ready for fast, semantic searching.
+### **Phase 1: Data Ingestion**
 
-### **Phase 2: Live Querying (User Interaction)**
-This is the core user experience, illustrated below with corrected technical precision:
+When a PDF file is uploaded to the Cloud Storage bucket, a Cloud Function is triggered. This function reads the PDF, extracts the text, splits it into chunks, generates vector embeddings for each chunk, and stores the chunks and their embeddings in Firestore.
+
+```mermaid
+graph TD
+    subgraph "Firebase Cloud"
+        A[Cloud Storage] -- 1. PDF Upload --> B(Cloud Function);
+        B -- 2. Extract Text --> C{Text Chunks};
+        C -- 3. Generate Embeddings --> D[Google AI Platform];
+        B -- 4. Store Chunks & Embeddings --> E(Firestore);
+    end
+```
+
+### **Phase 2: Live Querying**
+
+When a user enters a query in the web UI, a Cloud Function is called. This function generates an embedding for the query, searches Firestore for the most similar document chunks, and then uses a large language model to generate an answer based on the retrieved chunks.
 
 ```mermaid
 sequenceDiagram
@@ -100,13 +144,32 @@ sequenceDiagram
 
 ---
 
-## **5. Getting Started: The Agentic Workflow**
+## **5. Local Development**
 
-This project is designed to be built by an **agentic AI coder**, specifically the **Google Gemini CLI**. Your role is to guide the agent by providing it with the technical backlog (`project_backlog.md`).
+To make changes or test the application without deploying to the cloud, use the Firebase Local Emulator Suite.
+
+1.  **Install Dependencies**:
+    ```bash
+    npm install
+    ```
+2.  **Start the Emulators**:
+    ```bash
+    firebase emulators:start
+    ```
+    This will start a local version of your backend and frontend, with URLs provided in your terminal. This is the best way to test changes safely.
+
+3.  **Running Tests**:
+    This project does not yet have a test suite. See `ideas_backlog.md` for more information.
+
+---
+
+## **6. Getting Started: The Agentic Workflow**
+
+This project is designed to be built by an **agentic AI coder**. Your role is to guide the agent by providing it with the technical backlog (`project_backlog.md`).
 
 ## How the AI Agent Works
 
-The AI agent (e.g., Claude Code, Gemini CLI, Stitch, Qwen Coder, etc) reads the `project_backlog.md` file and generates executable shell scripts and code snippets. It automates tasks such as:
+The AI agent reads the `project_backlog.md` file and generates executable shell scripts and code snippets. It automates tasks such as:
 - Setting up Firebase infrastructure.
 - Writing backend logic for data ingestion and querying.
 - Deploying the application to Firebase.
@@ -132,53 +195,22 @@ Ensure the following tools are installed and configured on your workstation:
 ### **Step 3: Instruct Your AI Agent**
 Now, command your AI agent to build the project. The agent will read the `project_backlog.md` file and execute the plan defined within it.
 
-**Copy and paste this template into the Google Gemini CLI:**
-```bash
-Act as an expert Google Cloud engineer. Your task is to build the application defined in the `project_backlog.md` file.
-
-You will proceed by reading the Epics in the file one by one and generating the necessary shell scripts and code. I will then execute them.
-
-Let's start. Please begin with **Epic 1: Project and Infrastructure Setup**.
-
-Use the following configuration value:
-- PROJECT_ID: 'your-chosen-unique-project-id-123'
-
-Generate the shell script now. I will review and execute it before we proceed to the next Epic.
-```*Remember to replace `'your-chosen-unique-project-id-123'` with a unique name for your project.*
-
-Continue this conversational process with the agent for **Epic 2** and **Epic 3** until the implementation is complete.
-
 ---
 
-## **6. Post-Deployment Verification**
-After the AI agent has completed all tasks, verify the deployment:
-1.  The `firebase deploy` command (from Epic 3) will output a **Hosting URL**.
-2.  Open the URL in your browser. You should see the UI.
-3.  Enter a query to test the system. You should get a relevant response.
-4.  Optionally, check your Google Cloud console to see the created resources (Storage bucket, Firestore collections, etc.).
+## **7. Contributing**
 
----
+Contributions are welcome! If you would like to contribute to this project, please follow these steps:
 
-## **7. Local Development & Maintenance**
-To make changes or test the application without deploying to the cloud, use the Firebase Local Emulator Suite.
+1.  **Fork the repository.**
+2.  **Create a new branch for your feature or bug fix.**
+3.  **Make your changes and commit them with a descriptive commit message.**
+4.  **Push your changes to your fork.**
+5.  **Create a pull request.**
 
-1.  **Install Dependencies**:
-    ```bash
-    npm install
-    ```
-2.  **Start the Emulators**:
-    ```bash
-    firebase emulators:start
-    ```
-    This will start a local version of your backend and frontend, with URLs provided in your terminal. This is the best way to test changes safely.
-
-3.  **Deploying Changes**:
-    After testing locally, deploy updates to the live environment with a single command:
-    ```bash
-    firebase deploy
-    ```
+Please see the `ideas_backlog.md` file for a list of potential contributions.
 
 ---
 
 ## **8. License**
+
 This project is licensed under the **MIT License**. See the `LICENSE` file for details.
