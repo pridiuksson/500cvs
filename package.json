@@ -1,31 +1,26 @@
 {
-  "name": "app",
+  "name": "ai-cv-screener",
   "version": "1.0.0",
-  "description": "A serverless web application that allows HR teams to intelligently search through a library of candidate CVs using natural language queries. This project is designed to be built and deployed automatically by an **agentic AI coder**, ensuring a fast, error-free, and reproducible deployment.",
-  "main": "index.js",
+  "description": "AI-Powered CV Screening Application",
+  "main": "lib/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "genkit": "./node_modules/.bin/genkit"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pridiuksson/500cvs.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/pridiuksson/500cvs/issues"
-  },
-  "homepage": "https://github.com/pridiuksson/500cvs#readme",
-  "devDependencies": {
-    "genkit": "^1.15.2"
+    "build": "tsc",
+    "serve": "firebase emulators:start",
+    "deploy": "firebase deploy --only functions,hosting"
   },
   "dependencies": {
-    "@langchain/community": "^0.3.49",
-    "@langchain/core": "^0.3.66",
-    "@langchain/google-genai": "^0.2.16",
+    "@google-cloud/aiplatform": "^0.11.0",
+    "@google-cloud/firestore": "^7.0.0",
+    "@google-cloud/storage": "^7.0.0",
+    "@langchain/community": "^0.0.28",
+    "@langchain/core": "^0.1.30",
+    "@langchain/google-genai": "^0.0.10",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^4.5.0",
     "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "typescript": "^5.3.3"
   }
 }

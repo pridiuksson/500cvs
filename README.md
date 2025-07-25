@@ -2,6 +2,40 @@
 
 A serverless web application that allows HR teams to intelligently search through a library of candidate CVs using natural language queries. This project is designed to be built and deployed automatically by an **agentic AI coder**, ensuring a fast, error-free, and reproducible deployment.
 
+---
+
+## **Quick Start**
+
+For the impatient, here's how to get the project up and running in a few commands.
+
+**1. Clone the repository:**
+```bash
+git clone https://github.com/your-username/your-repo-name.git
+cd your-repo-name
+```
+
+**2. Install dependencies:**
+```bash
+npm install
+```
+
+**3. Run the application locally:**
+```bash
+firebase emulators:start
+```
+This will start the Firebase Local Emulator Suite, which includes a local version of the frontend and backend. You can access the application at the URL provided in the terminal.
+
+**4. Deploy to the cloud:**
+```bash
+# Set your Google Cloud Project ID
+export PROJECT_ID="your-chosen-unique-project-id-123"
+
+# Run the deployment script
+./02-deploy-and-upload.sh
+```
+
+---
+
 ## **1. The Problem**
 
 An HR department has hundreds of PDF CVs for a recruitment drive. Manually sifting through them to find candidates matching specific, nuanced criteria (e.g., "has worked at a startup," "has leadership experience in a corporate setting") is slow, inefficient, and prone to human error.
@@ -72,10 +106,10 @@ When a PDF file is uploaded to the Cloud Storage bucket, a Cloud Function is tri
 ```mermaid
 graph TD
     subgraph "Firebase Cloud"
-        A[Cloud Storage] -- | 1. PDF Upload | --> B(Cloud Function);
-        B -- | 2. Extract Text | --> C{Text Chunks};
-        C -- | 3. Generate Embeddings | --> D[Google AI Platform];
-        B -- | 4. Store Chunks & Embeddings | --> E(Firestore);
+        A[Cloud Storage] -- 1. PDF Upload --> B(Cloud Function);
+        B -- 2. Extract Text --> C{Text Chunks};
+        C -- 3. Generate Embeddings --> D[Google AI Platform];
+        B -- 4. Store Chunks & Embeddings --> E(Firestore);
     end
 ```
 
@@ -112,7 +146,7 @@ sequenceDiagram
 
 ## **5. Local Development**
 
-Here's how to get the project up and running in a few commands without deploying to the cloud useing the Firebase Local Emulator Suite.
+To make changes or test the application without deploying to the cloud, use the Firebase Local Emulator Suite.
 
 1.  **Install Dependencies**:
     ```bash
@@ -122,19 +156,10 @@ Here's how to get the project up and running in a few commands without deploying
     ```bash
     firebase emulators:start
     ```
-    This will start the Firebase Local Emulator Suite (a local version of your backend and frontend), with URLs provided in your terminal. TYou can access the application at the URL provided in the terminal.
+    This will start a local version of your backend and frontend, with URLs provided in your terminal. This is the best way to test changes safely.
 
 3.  **Running Tests**:
     This project does not yet have a test suite. See `ideas_backlog.md` for more information.
-
-4. Deploy to the cloud:**
-```bash
-# Set your Google Cloud Project ID
-export PROJECT_ID="your-chosen-unique-project-id-123"
-
-# Run the deployment script
-./02-deploy-and-upload.sh
-```
 
 ---
 
