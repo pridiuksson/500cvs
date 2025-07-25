@@ -10,11 +10,15 @@ if [ -z "$PROJECT_ID" ]; then
   exit 1
 fi
 
-# 1. Deployment
+# 1. Build
+echo "--- Building the project ---"
+npm run build
+
+# 2. Deployment
 echo "--- Deploying Firebase functions and hosting ---"
 firebase deploy --only functions,hosting
 
-# 2. Data Upload
+# 3. Data Upload
 echo "--- Uploading CVs to Cloud Storage ---"
 gcloud storage cp ./cv_files/*.pdf gs://$PROJECT_ID-cvs/
 

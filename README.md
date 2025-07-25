@@ -137,7 +137,6 @@ export PROJECT_ID="your-chosen-unique-project-id-123"
 ```
 
 ---
-
 ## **6. Getting Started: The Agentic Workflow**
 
 This project is designed to be built by an **agentic AI coder**. Your role is to guide the agent by providing it with the technical backlog (`project_backlog.md`).
