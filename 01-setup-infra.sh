@@ -12,7 +12,7 @@ command -v firebase >/dev/null 2>&1 || { echo >&2 "Firebase CLI required but not
 
 echo "--- Checking authentication status ---"
 gcloud auth print-access-token --quiet >/dev/null || { echo >&2 "Not logged in to gcloud. Please run 'gcloud auth login'. Aborting."; exit 1; }
-firebase login --non-interactive >/dev/null 2>&1 || { echo >&2 "Not logged in to Firebase. Please run 'firebase login'. Aborting."; exit 1; }
+firebase login --interactive >/dev/null 2>&1 || { echo >&2 "Not logged in to Firebase. Please run 'firebase login'. Aborting."; exit 1; }
 
 # 1. Project Creation & Configuration
 echo "--- Setting up Google Cloud Project: $PROJECT_ID ---"
