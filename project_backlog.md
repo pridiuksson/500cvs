@@ -58,12 +58,36 @@ I have confirmed access to the following capabilities and will utilize them to c
     # Create a .gitignore file
     echo "node_modules" > .gitignore
 
-    # Initialize a package.json file
-    npm init -y
+    # Create a package.json file with all dependencies
+    echo '{
+      "name": "ai-cv-screener",
+      "version": "1.0.0",
+      "description": "AI-Powered CV Screening Application",
+      "main": "lib/index.js",
+      "scripts": {
+        "build": "tsc",
+        "serve": "firebase emulators:start",
+        "deploy": "firebase deploy --only functions,hosting"
+      },
+      "dependencies": {
+        "@google-cloud/aiplatform": "^0.11.0",
+        "@google-cloud/firestore": "^7.0.0",
+        "@google-cloud/storage": "^7.0.0",
+        "@langchain/community": "^0.0.28",
+        "@langchain/core": "^0.1.30",
+        "@langchain/google-genai": "^0.0.10",
+        "firebase-admin": "^12.0.0",
+        "firebase-functions": "^4.5.0",
+        "pdf-parse": "^1.1.1"
+      },
+      "devDependencies": {
+        "@types/node": "^20.10.4",
+        "typescript": "^5.3.3"
+      }
+    }' > package.json
 
     # Install all dependencies
-    npm install firebase-functions @google-cloud/firestore @google-cloud/storage @google-cloud/aiplatform @langchain/google-genai @langchain/community @langchain/core pdf-parse firebase-admin
-    npm install --save-dev typescript @types/node
+    npm install
     ```
 *   **Success Criteria:** The commands execute successfully, a `node_modules` directory is present, a `package.json` and `package-lock.json` are created, and a `.gitignore` file exists.
 
@@ -73,16 +97,65 @@ I have confirmed access to the following capabilities and will utilize them to c
     ```prompt
     Generate a complete set of application source code files. Use the following file paths and content as high-fidelity templates. Ensure the code is modern, secure, and idiomatic for Firebase Gen2 Functions and Genkit.
 
-    **File: `genkit.config.ts`**
-    ```typescript
-    import { googleAI } from '@genkit-ai/google-ai';
-    import { firebase } from '@genkit-ai/firebase';
-    import { configureGenkit } from '@genkit-ai/core';
+    **File: `tsconfig.json`**
+    ```json
+    {
+      "compilerOptions": {
+        "module": "commonjs",
+        "noImplicitReturns": true,
+        "noUnusedLocals": true,
+        "outDir": "lib",
+        "sourceMap": true,
+        "strict": true,
+        "target": "es2017"
+      },
+      "compileOnSave": true,
+      "include": [
+        "src"
+      ]
+    }
+    ```
 
-    export default configureGenkit({
-      plugins: [googleAI(), firebase()],
-      logLevel: 'debug',
-      enableTracingAndMetrics: true,
+    **File: `src/index.ts`**
+    ```typescript
+    import { https, storage } from 'firebase-functions/v2';
+    import { initializeApp } from 'firebase-admin/app';
+    import { getFirestore } from 'firebase-admin/firestore';
+    import { getStorage } from 'firebase-admin/storage';
+    import { GoogleAIEmbeddings } from '@langchain/google-genai';
+    import { FirestoreVectorStore } from '@langchain/community/vectorstores/firestore';
+    import { Document } from '@langchain/core/documents';
+    import * as pdfparse from 'pdf-parse';
+    import { answerCVQuery } from './rag';
+
+    initializeApp();
+
+    export const queryCV = https.onCall(async (request) => {
+      const query = request.data.query as string;
+      if (!query) throw new https.HttpsError('invalid-argument', 'Query text must be provided.');
+      try {
+        const answer = await answerCVQuery(query);
+        return { answer };
+      } catch (error) {
+        console.error("Error in queryCV:", error);
+        throw new https.HttpsError('internal', 'An error occurred while processing your query.');
+      }
+    });
+
+    export const ingestCV = storage.object().onFinalize(async (object) => {
+      if (!object.name || !object.name.endsWith('.pdf')) return;
+      const file = getStorage().bucket(object.bucket).file(object.name);
+      try {
+        const [fileBuffer] = await file.download();
+        const pdfData = await pdfparse(fileBuffer);
+        const vectorStore = new FirestoreVectorStore(new GoogleAIEmbeddings(), { firestore: getFirestore() });
+        await vectorStore.addDocuments(
+          [new Document({ pageContent: pdfData.text, metadata: { source: object.name } })]
+        );
+        console.log(`Indexed ${object.name}.`);
+      } catch (error) {
+        console.error(`Error indexing ${object.name}:`, error);
+      }
     });
     ```
 
@@ -114,39 +187,6 @@ I have confirmed access to the following capabilities and will utilize them to c
     }
     ```
 
-    **File: `src/index.ts`**
-    ```typescript
-    import { https, storage } from 'firebase-functions/v2';
-    import { initializeApp } from 'firebase-admin/app';
-    import { getFirestore } from 'firebase-admin/firestore';
-    import { getStorage } from 'firebase-admin/storage';
-    import { GoogleAIEmbeddings } from '@langchain/google-genai';
-    import { FirestoreVectorStore } from '@langchain/community/vectorstores/firestore';
-    import { Document } from '@langchain/core/documents';
-    import * as pdfparse from 'pdf-parse';
-    import { answerCVQuery } from './rag';
-    
-    initializeApp();
-
-    export const queryCV = https.onCall(async (request) => {
-      const query = request.data.query as string;
-      if (!query) throw new https.HttpsError('invalid-argument', 'Query text must be provided.');
-      return { answer: await answerCVQuery(query) };
-    });
-
-    export const ingestCV = storage.object().onFinalize(async (object) => {
-      if (!object.name || !object.name.endsWith('.pdf')) return;
-      const file = getStorage().bucket(object.bucket).file(object.name);
-      const [fileBuffer] = await file.download();
-      const pdfData = await pdfparse(fileBuffer);
-      const vectorStore = new FirestoreVectorStore(new GoogleAIEmbeddings(), { firestore: getFirestore() });
-      await vectorStore.addDocuments(
-        [new Document({ pageContent: pdfData.text, metadata: { source: object.name } })]
-      );
-      console.log(`Indexed ${object.name}.`);
-    });
-    ```
-    
     **File: `public/index.html`**
     ```html
     <!DOCTYPE html>
@@ -318,8 +358,9 @@ I have confirmed access to the following capabilities and will utilize them to c
     **Script Requirements:**
     1.  The script must start with `set -e`.
     2.  The script must use the `$PROJECT_ID` environment variable and exit if it's not set.
-    3.  **Deployment:** Include the command `firebase deploy --only functions,hosting`.
-    4.  **Data Upload:** Include the command `gcloud storage cp ./cv_files/*.pdf gs://$PROJECT_ID-cvs/`.
+    3.  **Build:** Include the command `npm run build`.
+    4.  **Deployment:** Include the command `firebase deploy --only functions,hosting`.
+    5.  **Data Upload:** Include the command `gcloud storage cp ./cv_files/*.pdf gs://$PROJECT_ID-cvs/`.
     ```
 *   **Verification:** I will verify the generated script contains all the correct, sequential commands.
 
