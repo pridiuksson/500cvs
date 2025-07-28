@@ -3,6 +3,7 @@
 A serverless web application that allows HR teams to intelligently search through a library of candidate CVs using natural language queries. This project is designed to be built and deployed automatically by an **agentic AI coder**, ensuring a fast, error-free, and reproducible deployment.
 
 ![cover](500cvs1.png)
+
 UI by Stitch AI
 
 ## **1. The Problem**
