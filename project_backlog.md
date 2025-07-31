@@ -6,7 +6,15 @@
 **Mission:** Build and deploy the "AI-Powered CV Screening Application."
 **Directives:** This document is my complete operational instruction set. I will execute the Epics sequentially. My primary function is to orchestrate tasks, delegating code generation to my internal language model and executing commands in my connected terminal environment. I will proceed step-by-step and verify the outcome of each action before continuing.
 
-**A Note for the AI Agent:** It is crucial to use the correct package names, versions, and import paths. Please follow these instructions carefully.
+**A Note for the AI Agent on Code Snippets:**
+My experience has shown that directly embedding full code snippets for rapidly evolving APIs (like Genkit) can be counterproductive. While precise for stable tasks, they quickly become outdated, leading to compilation errors and prolonged debugging.
+
+Therefore, for complex or evolving components, this backlog will provide:
+1.  **Conceptual descriptions** of the required functionality.
+2.  **Explicit instructions to use `google_web_search`** to find the *latest official documentation and canonical examples* for the specific APIs.
+3.  **Key concepts and components** that must be present in the generated code.
+
+For stable, foundational files (like `package.json` or `tsconfig.json`), high-fidelity snippets will still be provided, but with explicit versioning where applicable. This approach empowers you to adapt to API changes and leverage your research capabilities effectively.
 
 ## **1. Operating Environment & Capabilities**
 
@@ -98,305 +106,53 @@ lib
 *   **My Task:** Generate all application source files with high-fidelity, verified code for a Genkit-based implementation.
 *   **[Delegation] Prompt for my Code Generation Module:**
     ```prompt
-    Generate a complete set of application source code files. Use the following file paths and content as high-fidelity templates. Ensure the code is modern, secure, and idiomatic for Firebase and Genkit.
+    Generate the following application source code files. For each file, provide a conceptual description of its purpose and key components. You MUST use `google_web_search` to find the latest official documentation and canonical examples for Genkit and Firebase APIs to ensure the generated code is correct and up-to-date.
 
     **File: `genkit.config.ts`**
-    ```typescript
-    import { firebase } from '@genkit-ai/firebase/plugin';
-    import { googleAI } from '@genkit-ai/googleai';
-    import { configure } from 'genkit';
-
-    export default configure({
-      plugins: [
-        firebase(),
-        googleAI(),
-      ],
-      logLevel: 'debug',
-      enableTracingAndMetrics: true,
-    });
-    ```
+    *   **Purpose:** Configures the Genkit environment, including plugins for Firebase and Google AI.
+    *   **Key Components:** `configure` function from `genkit`, `firebase` plugin from `@genkit-ai/firebase/plugin`, `googleAI` plugin from `@genkit-ai/googleai`.
+    *   **Research Directive:** Search for "Genkit configure example" and "Genkit Firebase plugin" to ensure correct import paths and usage.
 
     **File: `tsconfig.json`**
-    ```json
-    {
-      "compilerOptions": {
-        "module": "NodeNext",
-        "moduleResolution": "NodeNext",
-        "target": "ES2022",
-        "outDir": "lib",
-        "esModuleInterop": true,
-        "strict": true,
-        "skipLibCheck": true,
-        "sourceMap": true,
-        "noUnusedLocals": true,
-        "noImplicitReturns": true
-      },
-      "include": ["src/**/*.ts", "genkit.config.ts"],
-      "exclude": ["node_modules"],
-      "ts-node": {
-        "esm": true
-      }
-    }
-    ```
+    *   **Purpose:** TypeScript compiler configuration for the project.
+    *   **Key Components:** Standard TypeScript compiler options for Node.js ES2022 modules.
+    *   **Research Directive:** Search for "TypeScript NodeNext module configuration" if unsure about the latest recommended settings.
 
     **File: `src/index.ts`**
-    ```typescript
-    import { onObjectFinalized } from 'firebase-functions/v2/storage';
-    import { defineFlow, run } from 'genkit/flow';
-    import { getStorage } from 'firebase-admin/storage';
-    import { initializeApp } from 'firebase-admin/app';
-    import * as z from 'zod';
-    import pdf from 'pdf-parse';
-    import { Document, embed, geminiPro, textEmbedding } from '@genkit-ai/googleai';
-    import { onFlow } from '@genkit-ai/firebase/functions';
-    import { defineRetriever, retrieve } from 'genkit/ai';
-    import { generate } from 'genkit/ai';
-    import {
-      getFirestore,
-    } from 'firebase-admin/firestore';
-    import {
-      FirestoreVectorStore,
-    } from '@genkit-ai/firebase/firestore';
-
-    initializeApp();
-    const db = getFirestore();
-    const vectorStore = new FirestoreVectorStore({
-      firestore: db,
-      collection: 'cv-embeddings',
-      contentField: 'text',
-      embeddingField: 'embedding',
-    });
-
-    const cvRetriever = defineRetriever(
-      {
-        name: 'cv-retriever',
-        inputSchema: z.string(),
-        outputSchema: z.array(Document.schema)
-      },
-      async (query: string) => {
-        const embedding = await embed({ model: textEmbedding, content: query });
-        const docs = await vectorStore.similaritySearch(embedding, 4);
-        return { documents: docs };
-      }
-    );
-
-    export const queryCV = onFlow(
-      {
-        name: 'queryCV',
-        inputSchema: z.string(),
-        outputSchema: z.string(),
-        authPolicy: (auth, input) => {
-          if (!auth) {
-            throw new Error('Authentication required.');
-          }
-        },
-      },
-      async (query) => {
-        const context = await retrieve({ retriever: cvRetriever, query });
-        const llmResponse = await generate({
-          model: geminiPro,
-          prompt: `You are an expert HR assistant. Based ONLY on the following CV excerpts, answer the user's question. If the context does not contain the answer, state that you cannot find the information.\n\n            CONTEXT:\n            ${context.map((doc) => doc.content).join('\n---\n')}\n\n            QUESTION: ${query}`,
-        });
-        return llmResponse.text();
-      }
-    );
-
-    const ingestCVFlow = defineFlow(
-      {
-        name: 'ingestCVFlow',
-        inputSchema: z.string(),
-        outputSchema: z.void(),
-      },
-      async (filePath) => {
-        const file = getStorage().bucket().file(filePath);
-        const [fileBuffer] = await file.download();
-        const pdfData = await pdf(fileBuffer);
-        const documents = Document.fromText(pdfData.text, { source: filePath });
-        await vectorStore.add([documents]);
-        console.log(`Indexed ${filePath}.`);
-      }
-    );
-
-    export const ingestCV = onObjectFinalized(
-      { cpu: 2 },
-      async (event) => {
-        const filePath = event.data.name;
-        if (!filePath || !filePath.endsWith('.pdf')) {
-          console.log(`Skipping non-PDF file: ${filePath}`);
-          return;
-        }
-        await run(ingestCVFlow, { input: filePath });
-      }
-    );
-    ```
+    *   **Purpose:** Contains the main backend logic for the CV screening application, including PDF ingestion and natural language querying using Genkit flows.
+    *   **Key Components:**
+        *   Firebase Admin SDK initialization (`initializeApp`, `getStorage`, `getFirestore`).
+        *   PDF parsing (`pdf-parse`).
+        *   Genkit flows: `defineFlow` for `ingestCVFlow` (triggered by Cloud Storage `onObjectFinalized`) and `queryCV` (exposed as an `onFlow` HTTP callable function).
+        *   Genkit AI components: `defineRetriever` for `cvRetriever` (using Firestore as a vector store), `embed` for text embeddings (using `textEmbedding` model), and `generate` for LLM responses (using `geminiPro`).
+        *   Firestore Vector Store integration (`FirestoreVectorStore` from `@genkit-ai/firebase/firestore`).
+        *   Zod for input/output schema validation.
+    *   **Research Directive:** This is the most critical file. You MUST perform targeted `google_web_search` queries for:
+        *   "Genkit RAG example Firebase Firestore"
+        *   "Genkit defineFlow storage trigger"
+        *   "Genkit defineRetriever FirestoreVectorStore"
+        *   "Genkit embed textEmbedding"
+        *   "Genkit generate geminiPro"
+        *   "Firebase Functions v2 storage onObjectFinalized example"
+        *   "pdf-parse npm usage example"
+        *   Pay close attention to import paths, function signatures, and object structures in the latest examples.
 
     **File: `public/index.html`**
-    ```html
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>AI CV Screener</title>
-      <link rel="stylesheet" href="styles.css">
-    </head>
-    <body>
-      <div class="container">
-        <h1>AI CV Screener</h1>
-        <p>Ask a question about the CVs in the library.</p>
-        <div class="search-container">
-          <input type="text" id="query-input" placeholder="e.g., 'Who has experience in B2B SaaS?'">
-          <button id="query-btn">Ask</button>
-        </div>
-        <div id="loading" class="hidden">Thinking...</div>
-        <div id="result-container" class="hidden">
-          <h2>Answer:</h2>
-          <p id="result-text"></p>
-        </div>
-      </div>
-      <!-- Import the Firebase JS SDK -->
-      <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-functions.js";
-        import firebaseConfig from "/__/firebase/init.js?useEmulator=true";
-        window.firebase = {
-          initializeApp,
-          getFunctions,
-          httpsCallable,
-          firebaseConfig
-        };
-      </script>
-      <script type="module" src="app.js"></script>
-    </body>
-    </html>
-    ```
+    *   **Purpose:** The main HTML file for the web user interface.
+    *   **Key Components:** Basic HTML structure, CSS linking, input field for queries, button to trigger queries, and display areas for loading and results. Includes Firebase JS SDK imports for `firebase-app`, `firebase-functions`, and `firebase-init` (for emulator configuration).
+    *   **Research Directive:** Ensure the Firebase JS SDK imports are for the latest modular version and that `firebaseConfig` is correctly loaded for emulator use.
 
     **File: `public/styles.css`**
-    ```css
-    body {
-      font-family: sans-serif;
-      background-color: #f4f4f9;
-      color: #333;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .container {
-      width: 80%;
-      max-width: 800px;
-      background-color: #fff;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
-      font-size: 2rem;
-      color: #444;
-      margin-bottom: 0.5rem;
-    }
-
-    p {
-      font-size: 1.1rem;
-      color: #666;
-      margin-bottom: 2rem;
-    }
-
-    .search-container {
-      display: flex;
-      margin-bottom: 1.5rem;
-    }
-
-    #query-input {
-      flex-grow: 1;
-      padding: 0.8rem;
-      border: 1px solid #ccc;
-      border-radius: 4px 0 0 4px;
-      font-size: 1rem;
-    }
-
-    #query-btn {
-      padding: 0.8rem 1.5rem;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      border-radius: 0 4px 4px 0;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    #query-btn:hover {
-      background-color: #0056b3;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    #loading {
-      text-align: center;
-      padding: 1rem;
-      font-size: 1.2rem;
-      color: #007bff;
-    }
-
-    #result-container {
-      background-color: #f9f9f9;
-      padding: 1.5rem;
-      border-radius: 4px;
-      border: 1px solid #eee;
-    }
-
-    #result-container h2 {
-      margin-top: 0;
-      color: #333;
-    }
-
-    #result-text {
-      font-size: 1.1rem;
-      white-space: pre-wrap;
-      line-height: 1.6;
-    }
-    ```
+    *   **Purpose:** Provides basic styling for the web user interface.
+    *   **Key Components:** Simple CSS for layout, input fields, buttons, and result display.
+    *   **Research Directive:** No specific research needed, standard CSS practices apply.
 
     **File: `public/app.js`**
-    ```javascript
-    const { initializeApp, getFunctions, httpsCallable, firebaseConfig } = window.firebase;
-
-    const queryInput = document.getElementById('query-input');
-    const queryBtn = document.getElementById('query-btn');
-    const loadingDiv = document.getElementById('loading');
-    const resultContainer = document.getElementById('result-container');
-    const resultText = document.getElementById('result-text');
-
-    const app = initializeApp(firebaseConfig);
-    const functions = getFunctions(app);
-
-    queryBtn.addEventListener('click', async () => {
-      const query = queryInput.value;
-      if (!query) return;
-
-      loadingDiv.classList.remove('hidden');
-      resultContainer.classList.add('hidden');
-
-      try {
-        const queryCV = httpsCallable(functions, 'queryCV');
-        const result = await queryCV(query);
-        resultText.innerText = result.data;
-      } catch (error) {
-        console.error("Error calling queryCV function:", error);
-        resultText.innerText = 'An error occurred. Please check the console for details.';
-      } finally {
-        loadingDiv.classList.add('hidden');
-        resultContainer.classList.remove('hidden');
-      }
-    });
+    *   **Purpose:** Client-side JavaScript for handling user interaction and calling Firebase Cloud Functions.
+    *   **Key Components:** Event listener for the query button, calls the `queryCV` Firebase Function using `httpsCallable`, handles loading states, and displays results. Uses modular Firebase JS SDK imports.
+    *   **Research Directive:** Search for "Firebase Web SDK call Cloud Function httpsCallable modular" to ensure correct API usage.
     ```
-*   **Verification:** I will verify that all specified files have been created in the correct directories with the exact content prescribed.
+*   **Verification:** I will verify that all specified files have been created in the correct directories with the correct content based on the latest API usage found through research.
 
 ---
 
@@ -430,5 +186,3 @@ lib
     ```
 *   **Success Criteria:** I will observe the terminal output for the public **Firebase Hosting URL** and log messages confirming the successful upload of PDF files. The mission is complete upon the successful exit of this script.
 *   **Troubleshooting:** If the deployment fails, I will check the Firebase logs for more information. If the upload fails, I will ensure the `cv_files` directory exists and contains PDF files.
-
-```
