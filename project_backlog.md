@@ -6,12 +6,22 @@
 **Mission:** Build and deploy the "AI-Powered CV Screening Application."
 **Directives:** This document is my complete operational instruction set. I will execute the Epics sequentially. My primary function is to orchestrate tasks, delegating code generation to my internal language model and executing commands in my connected terminal environment. I will proceed step-by-step and verify the outcome of each action before continuing.
 
+**A Note for the AI Agent on Code Snippets:**
+My experience has shown that directly embedding full code snippets for rapidly evolving APIs (like Genkit) can be counterproductive. While precise for stable tasks, they quickly become outdated, leading to compilation errors and prolonged debugging.
+
+Therefore, for complex or evolving components, this backlog will provide:
+1.  **Conceptual descriptions** of the required functionality.
+2.  **Explicit instructions to use `google_web_search`** to find the *latest official documentation and canonical examples* for the specific APIs.
+3.  **Key concepts and components** that must be present in the generated code.
+
+For stable, foundational files (like `package.json` or `tsconfig.json`), high-fidelity snippets will still be provided, but with explicit versioning where applicable. This approach empowers you to adapt to API changes and leverage your research capabilities effectively.
+
 ## **1. Operating Environment & Capabilities**
 
 I have confirmed access to the following capabilities and will utilize them to complete this mission:
 
 *   **Terminal Access:** I have a fully operational shell environment.
-*   **Command-Line Tools:** I am authorized to use `gcloud`, `firebase`, `npm`, and standard Unix commands (`chmod`, `export`, etc.).
+*   **Command-Line Tools:** I am authorized to use `gcloud`, `firebase`, `npm`, `npx` and standard Unix commands (`chmod`, `export`, etc.).
 *   **Code Generation:** I will use my internal language model to generate source code based on precise prompts.
 *   **File System I/O:** I have the ability to read and write files to the local file system (e.g., saving generated code).
 
@@ -24,16 +34,16 @@ I have confirmed access to the following capabilities and will utilize them to c
 *   **My Task:** My primary task is to generate a shell script named `01-setup-infra.sh` that will perform the entire infrastructure setup.
 *   **[Delegation] Prompt for my Code Generation Module:**
     ```prompt
-    Generate a single, executable bash script named `01-setup-infra.sh`. The script must be idempotent where possible and use shell variables for configuration. It must perform the following sequence of actions:
+    Generate a single, executable bash script named `01-setup-infra.sh`. The script must be idempotent and use shell variables for configuration. It must perform the following sequence of actions:
     1.  **Error Handling:** The script must start with `set -e` to exit immediately if a command fails.
-    2.  **Configuration Variables:** Define `PROJECT_ID` and `REGION` at the top. The user will provide the `PROJECT_ID`.
-    3.  **Project Creation:** Create a new Google Cloud project and set it as the active gcloud configuration.
-    4.  **Firebase Integration:** Enable the Firebase service on the new project.
+    2.  **Configuration Variables:** Define `PROJECT_ID` and `REGION` at the top. The user will provide the `PROJECT_ID`. Exit if `PROJECT_ID` is not set or is set to a placeholder.
+    3.  **Project Creation:** Check if the project exists. If not, create a new Google Cloud project and set it as the active gcloud configuration.
+    4.  **Firebase Integration:** Check if the project is already linked to Firebase. If not, enable the Firebase service on the new project.
     5.  **API Enablement:** Programmatically enable `firestore.googleapis.com`, `storage.googleapis.com`, `aiplatform.googleapis.com`, `cloudfunctions.googleapis.com`, `cloudbuild.googleapis.com`, and `run.googleapis.com`.
-    6.  **Database Creation:** Create a Firestore database in Native mode. Use the `--location` flag for specifying the region.
-    7.  **Storage Creation:** Create a Cloud Storage bucket named `$PROJECT_ID-cvs`.
+    6.  **Database Creation:** Check if a Firestore database already exists. If not, create one in Native mode in the specified region.
+    7.  **Storage Creation:** Check if the Cloud Storage bucket already exists. If not, create a bucket named `$PROJECT_ID-cvs`.
     ```
-*   **Verification:** I will verify that the generated script contains all seven required actions and uses the correct `gcloud` and `firebase` commands as specified.
+*   **Verification:** I will verify that the generated script contains all seven required actions and uses the correct `gcloud` and `firebase` commands with idempotency checks.
 
 #### **Agent Task 1.2: Execute Infrastructure Script**
 *   **My Task:** My next task is to execute the generated script to provision the cloud resources.
@@ -43,20 +53,22 @@ I have confirmed access to the following capabilities and will utilize them to c
     chmod +x 01-setup-infra.sh
     ./01-setup-infra.sh
     ```
-*   **Success Criteria:** I will monitor the terminal output for success messages for each step. The script completes successfully when the final command exits with code 0.
-*   **Troubleshooting:** If the script fails, I will examine the error messages and attempt to fix the issue. Common issues include permissions errors or resources already existing.
+*   **Success Criteria:** I will monitor the terminal output for success or "already exists" messages for each step. The script completes successfully when the final command exits with code 0.
+*   **Troubleshooting:** If the script fails, I will examine the error messages and attempt to fix the issue. Common issues include permissions errors or the need to enable billing.
 
 ---
 
 ### **Epic 2: Application Source Code Generation**
-**Goal:** Generate the complete, correct, and deployable source code for the serverless RAG application.
+**Goal:** Generate the complete, correct, and deployable source code for the serverless RAG application using Genkit.
 
 #### **Agent Task 2.1: Initialize Project & Dependencies**
 *   **My Task:** Initialize the local project structure, create a `.gitignore` file, and install all necessary dependencies.
 *   **[Execution] Commands to run in Terminal:**
     ```bash
     # Create a .gitignore file
-    echo "node_modules" > .gitignore
+    echo "node_modules
+lib
+.DS_Store" > .gitignore
 
     # Create a package.json file with all dependencies
     echo '{
@@ -66,21 +78,20 @@ I have confirmed access to the following capabilities and will utilize them to c
       "main": "lib/index.js",
       "scripts": {
         "build": "tsc",
-        "serve": "firebase emulators:start",
+        "start": "genkit start",
         "deploy": "firebase deploy --only functions,hosting"
       },
       "dependencies": {
-        "@google-cloud/aiplatform": "^0.11.0",
-        "@google-cloud/firestore": "^7.0.0",
-        "@google-cloud/storage": "^7.0.0",
-        "@langchain/community": "^0.0.28",
-        "@langchain/core": "^0.1.30",
-        "@langchain/google-genai": "^0.0.10",
+        "genkit": "^0.6.1",
+        "@genkit-ai/googleai": "^0.6.1",
+        "@genkit-ai/firebase": "^0.6.1",
         "firebase-admin": "^12.0.0",
-        "firebase-functions": "^4.5.0",
-        "pdf-parse": "^1.1.1"
+        "firebase-functions": "^5.0.0",
+        "pdf-parse": "^1.1.1",
+        "zod": "^3.22.4"
       },
       "devDependencies": {
+        "@types/pdf-parse": "^1.1.4",
         "@types/node": "^20.10.4",
         "typescript": "^5.3.3"
       }
@@ -92,257 +103,56 @@ I have confirmed access to the following capabilities and will utilize them to c
 *   **Success Criteria:** The commands execute successfully, a `node_modules` directory is present, a `package.json` and `package-lock.json` are created, and a `.gitignore` file exists.
 
 #### **Agent Task 2.2: Generate Core Logic and UI Files**
-*   **My Task:** Generate all application source files with high-fidelity, verified code.
+*   **My Task:** Generate all application source files with high-fidelity, verified code for a Genkit-based implementation.
 *   **[Delegation] Prompt for my Code Generation Module:**
     ```prompt
-    Generate a complete set of application source code files. Use the following file paths and content as high-fidelity templates. Ensure the code is modern, secure, and idiomatic for Firebase Gen2 Functions and Genkit.
+    Generate the following application source code files. For each file, provide a conceptual description of its purpose and key components. You MUST use `google_web_search` to find the latest official documentation and canonical examples for Genkit and Firebase APIs to ensure the generated code is correct and up-to-date.
+
+    **File: `genkit.config.ts`**
+    *   **Purpose:** Configures the Genkit environment, including plugins for Firebase and Google AI.
+    *   **Key Components:** `configure` function from `genkit`, `firebase` plugin from `@genkit-ai/firebase/plugin`, `googleAI` plugin from `@genkit-ai/googleai`.
+    *   **Research Directive:** Search for "Genkit configure example" and "Genkit Firebase plugin" to ensure correct import paths and usage.
 
     **File: `tsconfig.json`**
-    ```json
-    {
-      "compilerOptions": {
-        "module": "commonjs",
-        "noImplicitReturns": true,
-        "noUnusedLocals": true,
-        "outDir": "lib",
-        "sourceMap": true,
-        "strict": true,
-        "target": "es2017"
-      },
-      "compileOnSave": true,
-      "include": [
-        "src"
-      ]
-    }
-    ```
+    *   **Purpose:** TypeScript compiler configuration for the project.
+    *   **Key Components:** Standard TypeScript compiler options for Node.js ES2022 modules.
+    *   **Research Directive:** Search for "TypeScript NodeNext module configuration" if unsure about the latest recommended settings.
 
     **File: `src/index.ts`**
-    ```typescript
-    import { https, storage } from 'firebase-functions/v2';
-    import { initializeApp } from 'firebase-admin/app';
-    import { getFirestore } from 'firebase-admin/firestore';
-    import { getStorage } from 'firebase-admin/storage';
-    import { GoogleAIEmbeddings } from '@langchain/google-genai';
-    import { FirestoreVectorStore } from '@langchain/community/vectorstores/firestore';
-    import { Document } from '@langchain/core/documents';
-    import * as pdfparse from 'pdf-parse';
-    import { answerCVQuery } from './rag';
-
-    initializeApp();
-
-    export const queryCV = https.onCall(async (request) => {
-      const query = request.data.query as string;
-      if (!query) throw new https.HttpsError('invalid-argument', 'Query text must be provided.');
-      try {
-        const answer = await answerCVQuery(query);
-        return { answer };
-      } catch (error) {
-        console.error("Error in queryCV:", error);
-        throw new https.HttpsError('internal', 'An error occurred while processing your query.');
-      }
-    });
-
-    export const ingestCV = storage.object().onFinalize(async (object) => {
-      if (!object.name || !object.name.endsWith('.pdf')) return;
-      const file = getStorage().bucket(object.bucket).file(object.name);
-      try {
-        const [fileBuffer] = await file.download();
-        const pdfData = await pdfparse(fileBuffer);
-        const vectorStore = new FirestoreVectorStore(new GoogleAIEmbeddings(), { firestore: getFirestore() });
-        await vectorStore.addDocuments(
-          [new Document({ pageContent: pdfData.text, metadata: { source: object.name } })]
-        );
-        console.log(`Indexed ${object.name}.`);
-      } catch (error) {
-        console.error(`Error indexing ${object.name}:`, error);
-      }
-    });
-    ```
-
-    **File: `src/rag.ts`**
-    ```typescript
-    import { generate } from '@genkit-ai/ai/model';
-    import { defineRetriever, retrieve } from '@genkit-ai/ai/retriever';
-    import { geminiPro } from '@genkit-ai/google-ai';
-    import { GoogleAIEmbeddings } from '@langchain/google-genai';
-    import { FirestoreVectorStore } from '@langchain/community/vectorstores/firestore';
-
-    export const cvRetriever = defineRetriever({ name: 'cv-firestore-retriever' }, async (query) => {
-      const firestore = new FirestoreVectorStore(new GoogleAIEmbeddings());
-      return { documents: await firestore.similaritySearch(query, 4) };
-    });
-
-    export async function answerCVQuery(query: string) {
-      const context = await retrieve({ retriever: cvRetriever, query });
-      const llmResponse = await generate({
-        model: geminiPro,
-        prompt: `You are an expert HR assistant. Based ONLY on the following CV excerpts, answer the user's question. If the context does not contain the answer, state that you cannot find the information.
-
-          CONTEXT:
-          ${context.documents.map(doc => doc.pageContent).join('\n---\n')}
-
-          QUESTION: ${query}`,
-      });
-      return llmResponse.text();
-    }
-    ```
+    *   **Purpose:** Contains the main backend logic for the CV screening application, including PDF ingestion and natural language querying using Genkit flows.
+    *   **Key Components:**
+        *   Firebase Admin SDK initialization (`initializeApp`, `getStorage`, `getFirestore`).
+        *   PDF parsing (`pdf-parse`).
+        *   Genkit flows: `defineFlow` for `ingestCVFlow` (triggered by Cloud Storage `onObjectFinalized`) and `queryCV` (exposed as an `onFlow` HTTP callable function).
+        *   Genkit AI components: `defineRetriever` for `cvRetriever` (using Firestore as a vector store), `embed` for text embeddings (using `textEmbedding` model), and `generate` for LLM responses (using `geminiPro`).
+        *   Firestore Vector Store integration (`FirestoreVectorStore` from `@genkit-ai/firebase/firestore`).
+        *   Zod for input/output schema validation.
+    *   **Research Directive:** This is the most critical file. You MUST perform targeted `google_web_search` queries for:
+        *   "Genkit RAG example Firebase Firestore"
+        *   "Genkit defineFlow storage trigger"
+        *   "Genkit defineRetriever FirestoreVectorStore"
+        *   "Genkit embed textEmbedding"
+        *   "Genkit generate geminiPro"
+        *   "Firebase Functions v2 storage onObjectFinalized example"
+        *   "pdf-parse npm usage example"
+        *   Pay close attention to import paths, function signatures, and object structures in the latest examples.
 
     **File: `public/index.html`**
-    ```html
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>AI CV Screener</title>
-      <link rel="stylesheet" href="styles.css">
-    </head>
-    <body>
-      <div class="container">
-        <h1>AI CV Screener</h1>
-        <p>Ask a question about the CVs in the library.</p>
-        <div class="search-container">
-          <input type="text" id="query-input" placeholder="e.g., 'Who has experience in B2B SaaS?'">
-          <button id="query-btn">Ask</button>
-        </div>
-        <div id="loading" class="hidden">Thinking...</div>
-        <div id="result-container" class="hidden">
-          <h2>Answer:</h2>
-          <p id="result-text"></p>
-        </div>
-      </div>
-      <script src="/__/firebase/9.0.0/firebase-app-compat.js"></script>
-      <script src="/__/firebase/9.0.0/firebase-functions-compat.js"></script>
-      <script src="/__/firebase/init.js"></script>
-      <script src="app.js"></script>
-    </body>
-    </html>
-    ```
+    *   **Purpose:** The main HTML file for the web user interface.
+    *   **Key Components:** Basic HTML structure, CSS linking, input field for queries, button to trigger queries, and display areas for loading and results. Includes Firebase JS SDK imports for `firebase-app`, `firebase-functions`, and `firebase-init` (for emulator configuration).
+    *   **Research Directive:** Ensure the Firebase JS SDK imports are for the latest modular version and that `firebaseConfig` is correctly loaded for emulator use.
 
     **File: `public/styles.css`**
-    ```css
-    body {
-      font-family: sans-serif;
-      background-color: #f4f4f9;
-      color: #333;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .container {
-      width: 80%;
-      max-width: 800px;
-      background-color: #fff;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    h1 {
-      font-size: 2rem;
-      color: #444;
-      margin-bottom: 0.5rem;
-    }
-
-    p {
-      font-size: 1.1rem;
-      color: #666;
-      margin-bottom: 2rem;
-    }
-
-    .search-container {
-      display: flex;
-      margin-bottom: 1.5rem;
-    }
-
-    #query-input {
-      flex-grow: 1;
-      padding: 0.8rem;
-      border: 1px solid #ccc;
-      border-radius: 4px 0 0 4px;
-      font-size: 1rem;
-    }
-
-    #query-btn {
-      padding: 0.8rem 1.5rem;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      border-radius: 0 4px 4px 0;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    #query-btn:hover {
-      background-color: #0056b3;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    #loading {
-      text-align: center;
-      padding: 1rem;
-      font-size: 1.2rem;
-      color: #007bff;
-    }
-
-    #result-container {
-      background-color: #f9f9f9;
-      padding: 1.5rem;
-      border-radius: 4px;
-      border: 1px solid #eee;
-    }
-
-    #result-container h2 {
-      margin-top: 0;
-      color: #333;
-    }
-
-    #result-text {
-      font-size: 1.1rem;
-      white-space: pre-wrap;
-      line-height: 1.6;
-    }
-    ```
+    *   **Purpose:** Provides basic styling for the web user interface.
+    *   **Key Components:** Simple CSS for layout, input fields, buttons, and result display.
+    *   **Research Directive:** No specific research needed, standard CSS practices apply.
 
     **File: `public/app.js`**
-    ```javascript
-    const queryInput = document.getElementById('query-input');
-    const queryBtn = document.getElementById('query-btn');
-    const loadingDiv = document.getElementById('loading');
-    const resultContainer = document.getElementById('result-container');
-    const resultText = document.getElementById('result-text');
-
-    firebase.initializeApp();
-    const functions = firebase.functions();
-
-    queryBtn.addEventListener('click', async () => {
-      const query = queryInput.value;
-      if (!query) return;
-
-      loadingDiv.classList.remove('hidden');
-      resultContainer.classList.add('hidden');
-
-      try {
-        const queryCV = functions.httpsCallable('queryCV');
-        const result = await queryCV({ query });
-        resultText.innerText = result.data.answer;
-      } catch (error) {
-        console.error("Error calling queryCV function:", error);
-        resultText.innerText = 'An error occurred. Please check the console for details.';
-      } finally {
-        loadingDiv.classList.add('hidden');
-        resultContainer.classList.remove('hidden');
-      }
-    });
+    *   **Purpose:** Client-side JavaScript for handling user interaction and calling Firebase Cloud Functions.
+    *   **Key Components:** Event listener for the query button, calls the `queryCV` Firebase Function using `httpsCallable`, handles loading states, and displays results. Uses modular Firebase JS SDK imports.
+    *   **Research Directive:** Search for "Firebase Web SDK call Cloud Function httpsCallable modular" to ensure correct API usage.
     ```
-*   **Verification:** I will verify that all specified files have been created in the correct directories with the exact content prescribed.
+*   **Verification:** I will verify that all specified files have been created in the correct directories with the correct content based on the latest API usage found through research.
 
 ---
 
@@ -360,7 +170,7 @@ I have confirmed access to the following capabilities and will utilize them to c
     2.  The script must use the `$PROJECT_ID` environment variable and exit if it's not set.
     3.  **Build:** Include the command `npm run build`.
     4.  **Deployment:** Include the command `firebase deploy --only functions,hosting`.
-    5.  **Data Upload:** Include the command `gcloud storage cp ./cv_files/*.pdf gs://$PROJECT_ID-cvs/`.
+    5.  **Data Upload:** Include a command to upload all PDF files from a local `cv_files` directory to the `gs://$PROJECT_ID-cvs/` bucket.
     ```
 *   **Verification:** I will verify the generated script contains all the correct, sequential commands.
 
@@ -368,7 +178,7 @@ I have confirmed access to the following capabilities and will utilize them to c
 *   **My Task:** Execute the final script to push the application live and upload the data.
 *   **[Execution] Commands to run in Terminal:**
     ```bash
-    # The human operator will have placed the PDFs in ./cv_files/
+    # The human operator will have placed the PDFs in a directory named `cv_files` at the root of the project.
     # I will set the PROJECT_ID from my memory of Epic 1.
     export PROJECT_ID=<PROJECT_ID_FROM_EPIC_1>
     chmod +x 02-deploy-and-upload.sh
