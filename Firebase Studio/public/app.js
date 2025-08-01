@@ -1,30 +1,25 @@
-const { initializeApp, getFunctions, httpsCallable, firebaseConfig } = window.firebase;
+const queryInput = document.getElementById('query-input');
+const queryButton = document.getElementById('query-button');
+const loading = document.getElementById('loading');
+const results = document.getElementById('results');
 
-    const queryInput = document.getElementById('query-input');
-    const queryBtn = document.getElementById('query-btn');
-    const loadingDiv = document.getElementById('loading');
-    const resultContainer = document.getElementById('result-container');
-    const resultText = document.getElementById('result-text');
+const functions = firebase.functions();
+const queryCV = functions.httpsCallable('queryCV');
 
-    const app = initializeApp(firebaseConfig);
-    const functions = getFunctions(app);
+queryButton.addEventListener('click', async () => {
+  const query = queryInput.value;
+  if (!query) return;
 
-    queryBtn.addEventListener('click', async () => {
-      const query = queryInput.value;
-      if (!query) return;
+  loading.style.display = 'block';
+  results.innerText = '';
 
-      loadingDiv.classList.remove('hidden');
-      resultContainer.classList.add('hidden');
-
-      try {
-        const queryCV = httpsCallable(functions, 'queryCV');
-        const result = await queryCV(query);
-        resultText.innerText = result.data;
-      } catch (error) {
-        console.error("Error calling queryCV function:", error);
-        resultText.innerText = 'An error occurred. Please check the console for details.';
-      } finally {
-        loadingDiv.classList.add('hidden');
-        resultContainer.classList.remove('hidden');
-      }
-    });
+  try {
+    const result = await queryCV(query);
+    results.innerText = result.data;
+  } catch (error) {
+    console.error(error);
+    results.innerText = 'Error: ' + error.message;
+  } finally {
+    loading.style.display = 'none';
+  }
+});

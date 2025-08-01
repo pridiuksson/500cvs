@@ -1,88 +1,89 @@
+import { genkit } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
+import { firebase } from '@genkit-ai/firebase/plugin';
+import { defineFirestoreRetriever } from '@genkit-ai/firebase/retriever';
+import { z } from 'zod';
+import * as fs from 'fs';
+import { initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import { onObjectFinalized } from 'firebase-functions/v2/storage';
-    import { defineFlow, run } from 'genkit/flow';
-    import { getStorage } from 'firebase-admin/storage';
-    import { initializeApp } from 'firebase-admin/app';
-    import * as z from 'zod';
-    import pdf from 'pdf-parse';
-    import { Document, embed, geminiPro, textEmbedding } from '@genkit-ai/googleai';
-    import { onFlow } from '@genkit-ai/firebase/functions';
-    import { defineRetriever, retrieve } from 'genkit/ai';
-    import { generate } from 'genkit/ai';
-    import {
-      getFirestore,
-    } from 'firebase-admin/firestore';
-    import {
-      FirestoreVectorStore,
-    } from '@genkit-ai/firebase/firestore';
+import { getStorage } from 'firebase-admin/storage';
+import * as pdfParse from 'pdf-parse';
 
-    initializeApp();
-    const db = getFirestore();
-    const vectorStore = new FirestoreVectorStore({
-      firestore: db,
-      collection: 'cv-embeddings',
-      contentField: 'text',
-      embeddingField: 'embedding',
+initializeApp();
+
+const genkitApp = genkit({
+  plugins: [
+    googleAI(),
+    firebase(),
+  ],
+});
+
+export const cvRetriever = defineFirestoreRetriever({
+  collection: 'cvs',
+  contentField: 'text',
+  vectorField: 'embedding',
+  embedder: googleAI.embedder('text-embedding-gecko-001'),
+});
+
+export const ingestCVFlow = onObjectFinalized(async (event) => {
+  const filePath = event.data.name;
+  const bucket = getStorage().bucket(event.data.bucket);
+  const file = bucket.file(filePath);
+  const [buffer] = await file.download();
+
+  const pdfData = await pdfParse.default(buffer);
+
+  const chunks = pdfData.text.split('\n\n');
+
+  const firestoreDB = getFirestore();
+  const collection = firestoreDB.collection('cvs');
+
+  for (const chunk of chunks) {
+    if (chunk.trim().length === 0) continue;
+
+    const embedding = await genkitApp.embed({
+      embedder: googleAI.embedder('text-embedding-gecko-001'),
+      content: chunk,
     });
 
-    const cvRetriever = defineRetriever(
-      {
-        name: 'cv-retriever',
-        inputSchema: z.string(),
-        outputSchema: z.array(Document.schema)
-      },
-      async (query: string) => {
-        const embedding = await embed({ model: textEmbedding, content: query });
-        const docs = await vectorStore.similaritySearch(embedding, 4);
-        return { documents: docs };
-      }
-    );
+    await collection.add({
+      text: chunk,
+      embedding: embedding.embedding,
+    });
+  }
+});
 
-    export const queryCV = onFlow(
-      {
-        name: 'queryCV',
-        inputSchema: z.string(),
-        outputSchema: z.string(),
-        authPolicy: (auth, input) => {
-          if (!auth) {
-            throw new Error('Authentication required.');
-          }
+export const queryCV = genkitApp.defineFlow(
+  {
+    name: 'queryCV',
+    inputSchema: z.string(),
+    outputSchema: z.string(),
+    https: true,
+  },
+  async (query: string) => {
+    const docs = await cvRetriever.retrieve(query);
+
+    const ragPrompt = {
+      history: [],
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              text: `You are a helpful CV screening assistant. Answer the user's question based only on the context provided below.\n\nCONTEXT:\n${docs.map((d: any) => d.content[0].text).join('\n---\n')}\n\nQUESTION:\n${query}`,
+            },
+          ],
         },
-      },
-      async (query) => {
-        const context = await retrieve({ retriever: cvRetriever, query });
-        const llmResponse = await generate({
-          model: geminiPro,
-          prompt: `You are an expert HR assistant. Based ONLY on the following CV excerpts, answer the user's question. If the context does not contain the answer, state that you cannot find the information.\n\n            CONTEXT:\n            ${context.map((doc) => doc.content).join('\n---\n')}\n\n            QUESTION: ${query}`,
-        });
-        return llmResponse.text();
-      }
-    );
+      ],
+    };
 
-    const ingestCVFlow = defineFlow(
-      {
-        name: 'ingestCVFlow',
-        inputSchema: z.string(),
-        outputSchema: z.void(),
-      },
-      async (filePath) => {
-        const file = getStorage().bucket().file(filePath);
-        const [fileBuffer] = await file.download();
-        const pdfData = await pdf(fileBuffer);
-        const documents = Document.fromText(pdfData.text, { source: filePath });
-        await vectorStore.add([documents]);
-        console.log(`Indexed ${filePath}.`);
-      }
-    );
+    const response = await genkitApp.generate({
+      model: googleAI.model('gemini-pro'),
+      prompt: ragPrompt,
+      config: { temperature: 0.3 },
+    });
 
-    export const ingestCV = onObjectFinalized(
-      { cpu: 2 },
-      async (event) => {
-        const filePath = event.data.name;
-        if (!filePath || !filePath.endsWith('.pdf')) {
-          console.log(`Skipping non-PDF file: ${filePath}`);
-          return;
-        }
-        await run(ingestCVFlow, { input: filePath });
-      }
-    );
-    
+    return response.text;
+  }
+);
