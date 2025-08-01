@@ -1,0 +1,41 @@
+[debug] [2025-08-01T20:47:53.531Z] ----------------------------------------------------------------------
+[debug] [2025-08-01T20:47:53.534Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /nix/store/fsdlxfaxdgx27856x49qycgdsyx5jxd3-firebase-tools-14.11.2/lib/node_modules/firebase-tools/lib/bin/firebase.js init hosting
+[debug] [2025-08-01T20:47:53.535Z] CLI Version:   14.11.2
+[debug] [2025-08-01T20:47:53.535Z] Platform:      linux
+[debug] [2025-08-01T20:47:53.535Z] Node Version:  v20.19.1
+[debug] [2025-08-01T20:47:53.535Z] Time:          Fri Aug 01 2025 20:47:53 GMT+0000 (Coordinated Universal Time)
+[debug] [2025-08-01T20:47:53.536Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-08-01T20:47:53.545Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-08-01T20:47:53.545Z] > authorizing via signed-in user (zanito@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/user/500cvs
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] but for now we'll just set up a default project.
+[info] 
+[debug] [2025-08-01T20:48:02.038Z] Checked if tokens are valid: true, expires at: 1754084078763
+[debug] [2025-08-01T20:48:02.039Z] Checked if tokens are valid: true, expires at: 1754084078763
+[debug] [2025-08-01T20:48:02.043Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=100
+[debug] [2025-08-01T20:48:02.555Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2025-08-01T20:48:02.556Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[info] i  Using project fb500cvs (fb500cvs) 
+[info] 
+=== Hosting Setup
+[debug] [2025-08-01T20:48:10.040Z] Checked if tokens are valid: true, expires at: 1754084078763
+[debug] [2025-08-01T20:48:10.040Z] Checked if tokens are valid: true, expires at: 1754084078763
+[debug] [2025-08-01T20:48:10.041Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/fb500cvs [none]
+[debug] [2025-08-01T20:48:10.256Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/fb500cvs 200
+[debug] [2025-08-01T20:48:10.256Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/fb500cvs {"projectId":"fb500cvs","projectNumber":"766443311117","displayName":"fb500cvs","name":"projects/fb500cvs","resources":{"hostingSite":"fb500cvs"},"state":"ACTIVE","etag":"1_cdb8aa98-f453-4578-bc07-6dcbbbc5721c"}

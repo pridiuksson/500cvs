@@ -1,19 +1,15 @@
 {
-      "compilerOptions": {
-        "module": "NodeNext",
-        "moduleResolution": "NodeNext",
-        "target": "ES2022",
-        "outDir": "lib",
-        "esModuleInterop": true,
-        "strict": true,
-        "skipLibCheck": true,
-        "sourceMap": true,
-        "noUnusedLocals": true,
-        "noImplicitReturns": true
-      },
-      "include": ["src/**/*.ts", "genkit.config.ts"],
-      "exclude": ["node_modules"],
-      "ts-node": {
-        "esm": true
-      }
-    }
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "es2022",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./lib",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"]
+}

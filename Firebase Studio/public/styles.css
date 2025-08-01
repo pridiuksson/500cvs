@@ -1,88 +1,48 @@
 body {
-      font-family: sans-serif;
-      background-color: #f4f4f9;
-      color: #333;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
+  font-family: sans-serif;
+  background-color: #f5f5f5;
+}
 
-    .container {
-      width: 80%;
-      max-width: 800px;
-      background-color: #fff;
-      padding: 2rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
+h1 {
+  text-align: center;
+  margin-top: 20px;
+}
 
-    h1 {
-      font-size: 2rem;
-      color: #444;
-      margin-bottom: 0.5rem;
-    }
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
 
-    p {
-      font-size: 1.1rem;
-      color: #666;
-      margin-bottom: 2rem;
-    }
+#query-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
 
-    .search-container {
-      display: flex;
-      margin-bottom: 1.5rem;
-    }
+#query-button {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+}
 
-    #query-input {
-      flex-grow: 1;
-      padding: 0.8rem;
-      border: 1px solid #ccc;
-      border-radius: 4px 0 0 4px;
-      font-size: 1rem;
-    }
+#loading {
+  display: none;
+  text-align: center;
+  margin-top: 20px;
+}
 
-    #query-btn {
-      padding: 0.8rem 1.5rem;
-      border: none;
-      background-color: #007bff;
-      color: white;
-      border-radius: 0 4px 4px 0;
-      cursor: pointer;
-      font-size: 1rem;
-    }
-
-    #query-btn:hover {
-      background-color: #0056b3;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    #loading {
-      text-align: center;
-      padding: 1rem;
-      font-size: 1.2rem;
-      color: #007bff;
-    }
-
-    #result-container {
-      background-color: #f9f9f9;
-      padding: 1.5rem;
-      border-radius: 4px;
-      border: 1px solid #eee;
-    }
-
-    #result-container h2 {
-      margin-top: 0;
-      color: #333;
-    }
-
-    #result-text {
-      font-size: 1.1rem;
-      white-space: pre-wrap;
-      line-height: 1.6;
-    }
+#results {
+  margin-top: 20px;
+  white-space: pre-wrap;
+}
