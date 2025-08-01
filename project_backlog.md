@@ -6,16 +6,6 @@
 **Mission:** Build and deploy the "AI-Powered CV Screening Application."
 **Directives:** This document is my complete operational instruction set. I will execute the Epics sequentially. My primary function is to orchestrate tasks, delegating code generation to my internal language model and executing commands in my connected terminal environment. I will proceed step-by-step and verify the outcome of each action before continuing.
 
-**A Note for the AI Agent on Code Snippets:**
-My experience has shown that directly embedding full code snippets for rapidly evolving APIs (like Genkit) can be counterproductive. While precise for stable tasks, they quickly become outdated, leading to compilation errors and prolonged debugging.
-
-Therefore, for complex or evolving components, this backlog will provide:
-1.  **Conceptual descriptions** of the required functionality.
-2.  **Explicit instructions to use `google_web_search`** to find the *latest official documentation and canonical examples* for the specific APIs.
-3.  **Key concepts and components** that must be present in the generated code.
-
-For stable, foundational files (like `package.json` or `tsconfig.json`), high-fidelity snippets will still be provided, but with explicit versioning where applicable. This approach empowers you to adapt to API changes and leverage your research capabilities effectively.
-
 ## **1. Operating Environment & Capabilities**
 
 I have confirmed access to the following capabilities and will utilize them to complete this mission:
